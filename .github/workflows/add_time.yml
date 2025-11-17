@@ -1,69 +1,57 @@
 name: 自动增加服务器时间
 
 on:
-  workflow_dispatch: # 允许在 Actions 页面手动触发此工作流，方便测试
+  workflow_dispatch: 
   schedule:
-    # 使用 CRON 表达式定义定时任务，所有时间均为 UTC 时间。
-    # '0 */6 * * *' 表示每 6 小时执行一次（分别在 00:00, 06:00, 12:00, 18:00 UTC）
-    # 如果您位于东八区（如北京时间），这对应您本地时间的 08:00, 14:00, 20:00, 02:00。
-    - cron: '0 */6 * * *'
+    - cron: '0 */6 * * *' # 每 6 小时执行一次
 
 jobs:
   add_time:
-    runs-on: ubuntu-latest # 在最新的 Ubuntu 环境上运行
+    runs-on: ubuntu-latest 
 
-    # 授予工作流写入仓库内容的权限
     permissions:
       contents: write
 
     steps:
-      - name: Checkout repository # 步骤1: 检出（下载）你的代码到运行环境中
+      - name: Checkout repository 
         uses: actions/checkout@v4
 
-      - name: Set up Python # 步骤2: 设置 Python 环境
+      - name: Set up Python 
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x' # 使用最新的 Python 3
+          python-version: '3.x' 
 
-      - name: Install Playwright and dependencies # 步骤3: 安装 Playwright 及其浏览器依赖
+      - name: Install Playwright and dependencies # <-- 【【【 这里是修改点 】】】
         run: |
           pip install playwright
-          playwright install --with-deps chromium # 安装 Chromium 浏览器及其运行所需的所有依赖
+          playwright install --with-deps firefox # 安装 Firefox 浏览器及其依赖
 
-      - name: Run Time Adder Script # 步骤4: 运行你的 Python 脚本
+      - name: Run Time Adder Script 
         env:
-          # 从 GitHub Secrets 读取环境变量，这些值绝不会在日志中明文显示
-          # 优先使用 Cookie 登录
           REMEMBER_WEB_COOKIE: ${{ secrets.REMEMBER_WEB_COOKIE }}
-          # 如果 Cookie 失效或未设置，则使用下面的邮箱和密码
           PTERODACTYL_EMAIL: ${{ secrets.PTERODACTYL_EMAIL }}
           PTERODACTYL_PASSWORD: ${{ secrets.PTERODACTYL_PASSWORD }}
         run: python main.py
 
-      - name: Upload error artifacts # 步骤5: 如果脚本运行失败，上传截图用于调试
-        if: failure() # 仅在上一步失败时运行
+      - name: Upload error artifacts 
+        if: failure() 
         uses: actions/upload-artifact@v4
         with:
-          name: error-screenshots # 上传后的文件包名称
-          path: "*.png" # 上传所有以 .png 结尾的文件
+          name: error-screenshots 
+          path: "*.png" 
 
-      - name: Commit time.txt to repo # 步骤6: 提交时间文件，证明脚本已运行
+      - name: Commit time.txt to repo 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # 如果 time.txt 不存在，说明是第一次运行
           if [ ! -f time.txt ]; then
             echo "首次生成时间：$(date +'%Y-%m-%d %H:%M:%S')" > time.txt
           else
             echo "$(date +'%Y-%m-%d %H:%M:%S')" > time.txt
           fi
-
           git add time.txt
-
-          # 如果有更改再提交
           if git diff --cached --quiet; then
             echo "无变化，无需提交"
           else
