@@ -1,7 +1,7 @@
 import os
 import time
 from playwright.sync_api import sync_playwright, Cookie, TimeoutError as PlaywrightTimeoutError
-from playwright_stealth import stealth_sync # <-- 【【【 新增导入 】】】
+from playwright_stealth.sync_api import stealth_sync # <-- 【【【 仅修正此行 】】】
 
 # --- URL 和选择器定义 ---
 BASE_URL = "https://game.wavehost.eu/"
@@ -12,7 +12,7 @@ ADD_BUTTON_SELECTOR = 'button:has-text("DODAJ 6 GODZIN")'
 
 def add_server_time():
     """
-    使用 playwright-stealth 尝试绕过 Cloudflare
+    使用 playwright-stealth 尝试绕过 Cloudflare (已修正 import)
     """
     # 从环境变量获取登录凭据
     remember_web_cookie = os.environ.get('REMEMBER_WEB_COOKIE')
@@ -24,7 +24,6 @@ def add_server_time():
         return False
 
     with sync_playwright() as p:
-        # 【变更】切换回 Chromium，因为 stealth 库支持最好
         browser = p.chromium.launch(headless=True)
         
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
@@ -34,15 +33,11 @@ def add_server_time():
         )
         page = context.new_page()
 
-        # --- 【【【 核心变更：应用隐身补丁 】】】 ---
         print("正在对浏览器页面应用 'stealth' (隐身) 补丁...")
         stealth_sync(page)
-        # --- 【【【 补丁应用完毕 】】】 ---
         
-        page.set_default_timeout(90000) # 90秒超时
+        page.set_default_timeout(90000)
         logged_in = False
-        
-        # 【变更】将等待时间恢复为 10 秒，因为如果 stealth 生效，页面会立即加载
         wait_time = 10 
 
         try:
@@ -67,7 +62,6 @@ def add_server_time():
                 print(f"页面已导航，等待 {wait_time} 秒 (等待 stealth 生效)...")
                 time.sleep(wait_time)
 
-                # 检查登录是否成功：通过查找指向服务器的管理链接
                 try:
                     print(f"检查 Cookie 登录是否成功（查找管理链接: {MANAGE_LINK_SELECTOR}）...")
                     page.wait_for_selector(MANAGE_LINK_SELECTOR, state='visible', timeout=15000)
@@ -77,7 +71,7 @@ def add_server_time():
                     print("Cookie 登录失败（未找到管理链接）或被 Cloudflare 拦截。")
                     page.screenshot(path="cookie_fail_or_cf.png")
                     page.context.clear_cookies()
-                    remember_web_cookie = None # 标记 Cookie 登录失败
+                    remember_web_cookie = None 
 
             # --- 方案二：如果 Cookie 方案失败或未提供，则使用邮箱密码登录 ---
             if not logged_in:
@@ -175,7 +169,7 @@ def add_server_time():
             return False
 
 if __name__ == "__main__":
-    print("开始执行添加服务器时间任务 (Stealth 模式)...")
+    print("开始执行添加服务器时间任务 (Stealth 模式 - 已修正import)...")
     success = add_server_time()
     if success:
         print("任务执行成功。")
