@@ -1,8 +1,8 @@
 import os
 import time
 from playwright.sync_api import sync_playwright, Cookie, TimeoutError as PlaywrightTimeoutError
-# 【【【 核心修正：使用正确的顶层导入 】】】
-from playwright_stealth import stealth_sync 
+# 【【【 核心修正：使用与 v1.0.0+ 匹配的正确导入路径 】】】
+from playwright_stealth.sync_api import stealth_sync 
 
 # --- URL 和选择器定义 ---
 BASE_URL = "https://game.wavehost.eu/"
@@ -13,7 +13,7 @@ ADD_BUTTON_SELECTOR = 'button:has-text("DODAJ 6 GODZIN")'
 
 def add_server_time():
     """
-    使用 playwright-stealth (已修正为正确的 import 和函数名)
+    使用 playwright-stealth (已修正版本和导入)
     """
     # 从环境变量获取登录凭据
     remember_web_cookie = os.environ.get('REMEMBER_WEB_COOKIE')
@@ -27,7 +27,7 @@ def add_server_time():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         
-        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+        user_agent = "Mozilla/5.0 (Windows NT 1.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
         context = browser.new_context(
             user_agent=user_agent,
             viewport={'width': 1920, 'height': 1080}
@@ -171,7 +171,7 @@ def add_server_time():
             return False
 
 if __name__ == "__main__":
-    print("开始执行添加服务器时间任务 (Stealth 模式 - 已修正最终import)...")
+    print("开始执行添加服务器时间任务 (Stealth 模式 - 已修正版本)...")
     success = add_server_time()
     if success:
         print("任务执行成功。")
