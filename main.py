@@ -2,25 +2,17 @@ import os
 import time
 from playwright.sync_api import sync_playwright, Cookie, TimeoutError as PlaywrightTimeoutError
 
-# --- 为清晰起见，在顶部定义所有 URL 和选择器 ---
-
-# 1. 目标网站的基础 URL（您的新方案：第1步）
+# --- URL 和选择器定义 ---
 BASE_URL = "https://game.wavehost.eu/"
-# 2. 登录页 URL（您的新方案：第2步）
 LOGIN_URL = "https://game.wavehost.eu/auth/login"
-# 3. 最终的服务器页面 URL（您的新方案：第3步）
 SERVER_URL = "https://game.wavehost.eu/server/667f11a7/"
-
-# 4. “管理”链接选择器：
-#    我们不使用模糊的 "Zarządzaj"，而是用这个更精确的选择器，
-#    它能准确找到“href”属性指向您服务器ID的那个链接。
 MANAGE_LINK_SELECTOR = f'a[href="/server/667f11a7/"]' 
-# 5. 最终要点击的按钮
 ADD_BUTTON_SELECTOR = 'button:has-text("DODAJ 6 GODZIN")'
 
 def add_server_time():
     """
-    按照新的“主页 -> 链接 -> 服务器”流程执行
+    按照“主页 -> 链接 -> 服务器”流程执行
+    已延长 Cloudflare 等待时间至 30 秒
     """
     # 从环境变量获取登录凭据
     remember_web_cookie = os.environ.get('REMEMBER_WEB_COOKIE')
@@ -32,7 +24,6 @@ def add_server_time():
         return False
 
     with sync_playwright() as p:
-        # 我们继续使用 Firefox 和伪装，因为 Cloudflare 仍然存在
         browser = p.firefox.launch(headless=True)
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
         context = browser.new_context(
@@ -63,8 +54,8 @@ def add_server_time():
                 print(f"已设置 Cookie。正在访问【主页】: {BASE_URL}")
                 page.goto(BASE_URL, wait_until="domcontentloaded", timeout=90000)
                 
-                print("页面已导航，等待 10 秒，以便 Cloudflare (如果存在) 进行验证...")
-                time.sleep(10)
+                print("【变更】页面已导航，等待 30 秒，以便 Cloudflare (如果存在) 进行验证...")
+                time.sleep(30) # <-- 延长等待时间
 
                 # 检查登录是否成功：通过查找指向服务器的管理链接
                 try:
@@ -88,8 +79,8 @@ def add_server_time():
                 print(f"正在访问【登录页面】: {LOGIN_URL}")
                 page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=90000)
                 
-                print("已导航到登录页，等待 10 秒...")
-                time.sleep(10)
+                print("【变更】已导航到登录页，等待 30 秒...")
+                time.sleep(30) # <-- 延长等待时间
 
                 email_selector = 'input[name="username"]'
                 password_selector = 'input[name="password"]'
@@ -108,8 +99,8 @@ def add_server_time():
                 with page.expect_navigation(wait_until="domcontentloaded", timeout=60000):
                     page.click(login_button_selector)
                 
-                print("登录后导航完成，等待 10 秒...")
-                time.sleep(10)
+                print("【变更】登录后导航完成，等待 30 秒...")
+                time.sleep(30) # <-- 延长等待时间
 
                 if "login" in page.url or "auth" in page.url:
                     error_text = page.locator('.alert.alert-danger').inner_text().strip() if page.locator('.alert.alert-danger').count() > 0 else "未知错误"
@@ -122,13 +113,13 @@ def add_server_time():
                     logged_in = True
             
             # --- 导航步骤：从主页点击链接到服务器页面 ---
-            # 无论哪种方式登录，此时都应该在主页上
             
             print(f"确保当前在主页 ({BASE_URL}) ...")
             if BASE_URL not in page.url:
                 print(f"警告：当前不在主页 (在 {page.url})，尝试强制导航到主页...")
                 page.goto(BASE_URL, wait_until="domcontentloaded", timeout=90000)
-                time.sleep(10)
+                print("【变更】强制导航到主页，等待 30 秒...")
+                time.sleep(30) # <-- 延长等待时间
 
             print(f"正在查找服务器管理链接: {MANAGE_LINK_SELECTOR} ...")
             manage_link = page.locator(MANAGE_LINK_SELECTOR)
@@ -138,8 +129,8 @@ def add_server_time():
             with page.expect_navigation(wait_until="domcontentloaded", timeout=60000):
                 manage_link.click()
             
-            print("导航到服务器页面完成，等待 10 秒...")
-            time.sleep(10)
+            print("【变更】导航到服务器页面完成，等待 30 秒...")
+            time.sleep(30) # <-- 延长等待时间
 
             # 最终检查是否到达了正确的页面
             if page.url != SERVER_URL:
@@ -175,7 +166,7 @@ def add_server_time():
             return False
 
 if __name__ == "__main__":
-    print("开始执行添加服务器时间任务 (新流程: 主页->服务器)...")
+    print("开始执行添加服务器时间任务 (新流程, 30秒等待)...")
     success = add_server_time()
     if success:
         print("任务执行成功。")
