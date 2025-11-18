@@ -1,6 +1,7 @@
 import os
 import time
 from playwright.sync_api import sync_playwright, Cookie, TimeoutError as PlaywrightTimeoutError
+from playwright_stealth import stealth_sync # <-- 【【【 新增导入 】】】
 
 # --- URL 和选择器定义 ---
 BASE_URL = "https://game.wavehost.eu/"
@@ -11,8 +12,7 @@ ADD_BUTTON_SELECTOR = 'button:has-text("DODAJ 6 GODZIN")'
 
 def add_server_time():
     """
-    按照“主页 -> 链接 -> 服务器”流程执行
-    已延长 Cloudflare 等待时间至 30 秒
+    使用 playwright-stealth 尝试绕过 Cloudflare
     """
     # 从环境变量获取登录凭据
     remember_web_cookie = os.environ.get('REMEMBER_WEB_COOKIE')
@@ -24,16 +24,26 @@ def add_server_time():
         return False
 
     with sync_playwright() as p:
-        browser = p.firefox.launch(headless=True)
+        # 【变更】切换回 Chromium，因为 stealth 库支持最好
+        browser = p.chromium.launch(headless=True)
+        
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
         context = browser.new_context(
             user_agent=user_agent,
             viewport={'width': 1920, 'height': 1080}
         )
         page = context.new_page()
-        page.set_default_timeout(90000) # 90秒超时
 
+        # --- 【【【 核心变更：应用隐身补丁 】】】 ---
+        print("正在对浏览器页面应用 'stealth' (隐身) 补丁...")
+        stealth_sync(page)
+        # --- 【【【 补丁应用完毕 】】】 ---
+        
+        page.set_default_timeout(90000) # 90秒超时
         logged_in = False
+        
+        # 【变更】将等待时间恢复为 10 秒，因为如果 stealth 生效，页面会立即加载
+        wait_time = 10 
 
         try:
             # --- 方案一：优先尝试使用 Cookie 会话登录 ---
@@ -54,8 +64,8 @@ def add_server_time():
                 print(f"已设置 Cookie。正在访问【主页】: {BASE_URL}")
                 page.goto(BASE_URL, wait_until="domcontentloaded", timeout=90000)
                 
-                print("【变更】页面已导航，等待 30 秒，以便 Cloudflare (如果存在) 进行验证...")
-                time.sleep(30) # <-- 延长等待时间
+                print(f"页面已导航，等待 {wait_time} 秒 (等待 stealth 生效)...")
+                time.sleep(wait_time)
 
                 # 检查登录是否成功：通过查找指向服务器的管理链接
                 try:
@@ -67,7 +77,7 @@ def add_server_time():
                     print("Cookie 登录失败（未找到管理链接）或被 Cloudflare 拦截。")
                     page.screenshot(path="cookie_fail_or_cf.png")
                     page.context.clear_cookies()
-                    remember_web_cookie = None # 标记 Cookie 登录失败，以便执行下一步
+                    remember_web_cookie = None # 标记 Cookie 登录失败
 
             # --- 方案二：如果 Cookie 方案失败或未提供，则使用邮箱密码登录 ---
             if not logged_in:
@@ -79,8 +89,8 @@ def add_server_time():
                 print(f"正在访问【登录页面】: {LOGIN_URL}")
                 page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=90000)
                 
-                print("【变更】已导航到登录页，等待 30 秒...")
-                time.sleep(30) # <-- 延长等待时间
+                print(f"已导航到登录页，等待 {wait_time} 秒...")
+                time.sleep(wait_time)
 
                 email_selector = 'input[name="username"]'
                 password_selector = 'input[name="password"]'
@@ -99,8 +109,8 @@ def add_server_time():
                 with page.expect_navigation(wait_until="domcontentloaded", timeout=60000):
                     page.click(login_button_selector)
                 
-                print("【变更】登录后导航完成，等待 30 秒...")
-                time.sleep(30) # <-- 延长等待时间
+                print(f"登录后导航完成，等待 {wait_time} 秒...")
+                time.sleep(wait_time)
 
                 if "login" in page.url or "auth" in page.url:
                     error_text = page.locator('.alert.alert-danger').inner_text().strip() if page.locator('.alert.alert-danger').count() > 0 else "未知错误"
@@ -118,8 +128,8 @@ def add_server_time():
             if BASE_URL not in page.url:
                 print(f"警告：当前不在主页 (在 {page.url})，尝试强制导航到主页...")
                 page.goto(BASE_URL, wait_until="domcontentloaded", timeout=90000)
-                print("【变更】强制导航到主页，等待 30 秒...")
-                time.sleep(30) # <-- 延长等待时间
+                print(f"强制导航到主页，等待 {wait_time} 秒...")
+                time.sleep(wait_time) 
 
             print(f"正在查找服务器管理链接: {MANAGE_LINK_SELECTOR} ...")
             manage_link = page.locator(MANAGE_LINK_SELECTOR)
@@ -129,10 +139,9 @@ def add_server_time():
             with page.expect_navigation(wait_until="domcontentloaded", timeout=60000):
                 manage_link.click()
             
-            print("【变更】导航到服务器页面完成，等待 30 秒...")
-            time.sleep(30) # <-- 延长等待时间
+            print(f"导航到服务器页面完成，等待 {wait_time} 秒...")
+            time.sleep(wait_time)
 
-            # 最终检查是否到达了正确的页面
             if page.url != SERVER_URL:
                 print(f"错误: 点击链接后，意外地到达了 {page.url}")
                 print(f"期望的 URL 是: {SERVER_URL}")
@@ -149,7 +158,7 @@ def add_server_time():
                 add_button.wait_for(state='visible', timeout=30000)
                 add_button.click()
                 print("成功点击 'DODAJ 6 GODZIN' 按钮。")
-                time.sleep(5) # 等待5秒，确保操作在服务器端生效
+                time.sleep(5) 
                 print("任务完成。")
                 browser.close()
                 return True
@@ -166,7 +175,7 @@ def add_server_time():
             return False
 
 if __name__ == "__main__":
-    print("开始执行添加服务器时间任务 (新流程, 30秒等待)...")
+    print("开始执行添加服务器时间任务 (Stealth 模式)...")
     success = add_server_time()
     if success:
         print("任务执行成功。")
