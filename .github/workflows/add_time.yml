@@ -26,7 +26,8 @@ jobs:
           python -m pip install --upgrade pip
           pip cache purge
           pip uninstall -y playwright-stealth || true
-          pip install --upgrade playwright playwright-stealth 
+          # 强制安装 >= 1.0.0 的版本，以确保 sync_api 模块存在
+          pip install --upgrade playwright "playwright-stealth>=1.0.0" 
           playwright install --with-deps chromium 
 
       - name: Run Time Adder Script 
