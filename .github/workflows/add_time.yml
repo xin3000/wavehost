@@ -1,10 +1,9 @@
 name: 自动增加服务器时间
 
 on:
-  workflow_dispatch: # 允许在 Actions 页面手动触发此工作流，方便测试
+  workflow_dispatch: 
   schedule:
-    # '0 */6 * * *' 表示每 6 小时执行一次
-    - cron: '0 */6 * * *'
+    - cron: '0 */6 * * *' 
 
 jobs:
   add_time:
@@ -24,8 +23,8 @@ jobs:
 
       - name: Install Playwright and dependencies # <-- 【【【 这里有重要修改 】】】
         run: |
-          pip install playwright playwright-stealth # 额外安装 stealth 库
-          playwright install --with-deps chromium # 换回 chromium
+          pip install --upgrade playwright playwright-stealth # 添加 --upgrade 强制升级
+          playwright install --with-deps chromium 
 
       - name: Run Time Adder Script 
         env:
