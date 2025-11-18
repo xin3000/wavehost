@@ -21,12 +21,11 @@ jobs:
         with:
           python-version: '3.12' # 保持稳定的 Python 3.12
 
-      - name: Install Playwright and dependencies # <-- 【【【 这里是核心修改 】】】
+      - name: Install Playwright and dependencies # (保持强制清理和版本锁定)
         run: |
           python -m pip install --upgrade pip
           pip cache purge
           pip uninstall -y playwright-stealth || true
-          # 强制安装 >= 1.0.0 的版本，以确保 sync_api 模块存在
           pip install --upgrade playwright "playwright-stealth>=1.0.0" 
           playwright install --with-deps chromium 
 
