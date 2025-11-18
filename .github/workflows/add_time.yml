@@ -16,14 +16,14 @@ jobs:
       - name: Checkout repository 
         uses: actions/checkout@v4
 
-      - name: Set up Python 
+      - name: Set up Python # <-- 【【【 这里是核心修改 】】】
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x' 
+          python-version: '3.12' # 指定一个稳定的 Python 版本，而不是 '3.x'
 
-      - name: Install Playwright and dependencies # <-- 【【【 这里有重要修改 】】】
+      - name: Install Playwright and dependencies # (保持 --upgrade 不变)
         run: |
-          pip install --upgrade playwright playwright-stealth # 添加 --upgrade 强制升级
+          pip install --upgrade playwright playwright-stealth 
           playwright install --with-deps chromium 
 
       - name: Run Time Adder Script 
