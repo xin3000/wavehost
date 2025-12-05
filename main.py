@@ -1,8 +1,8 @@
 import os
 import time
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
-# 修改后的导入路径
-from playwright_stealth import stealth_sync
+# 使用新版的 playwright-stealth
+from playwright_stealth import stealth
 
 # --- URL 和选择器定义 ---
 BASE_URL = "https://game.wavehost.eu/"
@@ -35,8 +35,8 @@ def add_server_time():
         page = context.new_page()
 
         print("正在对浏览器页面应用 'stealth' (隐身) 补丁...")
-        stealth_sync(page) 
-        
+        stealth(page)  # 使用新版的 stealth
+
         page.set_default_timeout(90000)
         logged_in = False
         wait_time = 10 
