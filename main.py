@@ -7,8 +7,8 @@ from playwright_stealth.sync_api import stealth_sync
 # --- URL 和选择器定义 ---
 BASE_URL = "https://game.wavehost.eu/"
 LOGIN_URL = "https://game.wavehost.eu/auth/login"
-SERVER_URL = "https://game.wavehost.eu/server/667f11a7/"
-MANAGE_LINK_SELECTOR = f'a[href="/server/667f11a7/"]' 
+SERVER_URL = "https://game.wavehost.eu/server/e3dae0dc/"
+MANAGE_LINK_SELECTOR = f'a[href="/server/e3dae0dc/"]' 
 ADD_BUTTON_SELECTOR = 'button:has-text("DODAJ 6 GODZIN")'
 
 def add_server_time():
